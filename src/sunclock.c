@@ -169,7 +169,7 @@ void updateDayAndNightInfo(PblTm *pblTime) {
     sunsetTime+=1;
   } 
   
-  if(sunsetTime > 21) {
+  if(sunsetTime > 21 || sunsetTime > 0) {
       text_layer_set_text_color(&moonLayer, GColorBlack);
   }
   
