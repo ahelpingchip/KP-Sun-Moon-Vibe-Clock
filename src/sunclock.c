@@ -312,7 +312,9 @@ void handle_init(AppContextRef ctx) {
   text_layer_set_text_color(&text_time_layer, GColorBlack);
   text_layer_set_background_color(&text_time_layer, GColorClear);
   layer_set_frame(&text_time_layer.layer, GRect(0, 35, 144, 30));
-  text_layer_set_font(&text_time_layer, fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_CONDENSED_30)));
+  font_roboto = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_CONDENSED_30));
+  text_layer_set_font(&date_layer, font_roboto);
+
   layer_add_child(&window.layer, &text_time_layer.layer);
 
   rotbmp_pair_init_container(RESOURCE_ID_IMAGE_HOUR_WHITE, RESOURCE_ID_IMAGE_HOUR_BLACK, &bitmap_container);
@@ -405,6 +407,7 @@ void handle_deinit(AppContextRef ctx) {
   rotbmp_pair_deinit_container(&watchface_container);
   rotbmp_pair_deinit_container(&bitmap_container);
   fonts_unload_custom_font(font_moon);
+  fonts_unload_custom_font(font_roboto);
 }
 
 void pbl_main(void *params) {
