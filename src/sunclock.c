@@ -64,8 +64,6 @@ GPathInfo sun_path_info = {
 
 GPath sun_path;
 
-short currentData = -1;
-
 void graphics_sun_layer_update_callback(Layer *me, GContext* ctx) 
 {
   (void)me;
@@ -158,83 +156,69 @@ void handle_day(AppContextRef ctx, PebbleTickEvent *t) {
 
 
 
-void updateDayAndNightInfo(bool update_everything)
+void updateDayAndNightInfo(PblTm *pblTime)
 {
   static char sunrise_text[] = "00:00";
   static char sunset_text[] = "00:00";
+  
+  char *time_format;
 
-  PblTm pblTime;
-  get_time(&pblTime);
-
-  if(update_everything || currentData != pblTime.tm_hour) 
-  {
-    char *time_format;
-
-    if (clock_is_24h_style()) 
-    {
-      time_format = "%R";
-    } 
-    else 
-    {
-      time_format = "%l:%M";
-    }
-
-    float sunriseTime = calcSunRise(pblTime.tm_year, pblTime.tm_mon+1, pblTime.tm_mday, realLatitude, realLongitude, 91.0f);
-    float sunsetTime = calcSunSet(pblTime.tm_year, pblTime.tm_mon+1, pblTime.tm_mday, realLatitude, realLongitude, 91.0f);
-    adjustTimezone(&sunriseTime);
-    adjustTimezone(&sunsetTime);
-    
-    if (!pblTime.tm_isdst) 
-    {
-      sunriseTime+=1;
-      sunsetTime+=1;
-    } 
-    
-    pblTime.tm_min = (int)(60*(sunriseTime-((int)(sunriseTime))));
-    pblTime.tm_hour = (int)sunriseTime;
-    string_format_time(sunrise_text, sizeof(sunrise_text), time_format, &pblTime);
-
-    //Sunrise shows at top if before 6 am and 6 pm bottom otherwise
-    if (pblTime.tm_hour > 6 && pblTime.tm_hour < 18) {
-      text_layer_set_text(&text_top_sunrise_layer, "");
-      text_layer_set_text(&text_bottom_sunrise_layer, sunrise_text);
-    }
-    else {
-      text_layer_set_text(&text_top_sunrise_layer, sunrise_text);
-      text_layer_set_text(&text_bottom_sunrise_layer, "");
-    }
-    
-    pblTime.tm_min = (int)(60*(sunsetTime-((int)(sunsetTime))));
-    pblTime.tm_hour = (int)sunsetTime;
-    string_format_time(sunset_text, sizeof(sunset_text), time_format, &pblTime);
-
-    //Sunset shows at top if before 6 am and 6 pm bottom otherwise
-    if (pblTime.tm_hour > 6 && pblTime.tm_hour < 18) {
-      text_layer_set_text(&text_top_sunset_layer, sunset_text);
-      text_layer_set_text_alignment(&text_top_sunset_layer, GTextAlignmentRight);
-      text_layer_set_text(&text_bottom_sunset_layer, "");
-    }
-    else {
-      text_layer_set_text(&text_top_sunset_layer, "");
-      text_layer_set_text(&text_bottom_sunset_layer, sunset_text);
-      text_layer_set_text_alignment(&text_bottom_sunset_layer, GTextAlignmentRight);
-    }
-    
-    sunriseTime+=12.0f;
-    sun_path_info.points[1].x = (int16_t)(my_sin(sunriseTime/24 * M_PI * 2) * 120);
-    sun_path_info.points[1].y = -(int16_t)(my_cos(sunriseTime/24 * M_PI * 2) * 120);
-
-    sunsetTime+=12.0f;
-    sun_path_info.points[4].x = (int16_t)(my_sin(sunsetTime/24 * M_PI * 2) * 120);
-    sun_path_info.points[4].y = -(int16_t)(my_cos(sunsetTime/24 * M_PI * 2) * 120);
-
-    currentData = pblTime.tm_hour;
-    
-    //Update location unless being called from location update
-    if (!update_everything) {
-      http_time_request();
-    }
+  if (clock_is_24h_style()) {
+    time_format = "%R";
+  } 
+  else {
+    time_format = "%l:%M";
   }
+
+  float sunriseTime = calcSunRise(pblTime->tm_year, pblTime->tm_mon+1, pblTime->tm_mday, realLatitude, realLongitude, 91.0f);
+  float sunsetTime = calcSunSet(pblTime->tm_year, pblTime->tm_mon+1, pblTime->tm_mday, realLatitude, realLongitude, 91.0f);
+  adjustTimezone(&sunriseTime);
+  adjustTimezone(&sunsetTime);
+  
+  if (!pblTime->tm_isdst) 
+  {
+    sunriseTime+=1;
+    sunsetTime+=1;
+  } 
+  
+  pblTime->tm_min = (int)(60*(sunriseTime-((int)(sunriseTime))));
+  pblTime->tm_hour = (int)sunriseTime;
+  string_format_time(sunrise_text, sizeof(sunrise_text), time_format, pblTime);
+
+  //Sunrise shows at top if before 6 am and 6 pm bottom otherwise
+  if (pblTime->tm_hour > 6 && pblTime->tm_hour < 18) {
+    text_layer_set_text(&text_top_sunrise_layer, "");
+    text_layer_set_text(&text_bottom_sunrise_layer, sunrise_text);
+  }
+  else {
+    text_layer_set_text(&text_top_sunrise_layer, sunrise_text);
+    text_layer_set_text(&text_bottom_sunrise_layer, "");
+  }
+  
+  pblTime->tm_min = (int)(60*(sunsetTime-((int)(sunsetTime))));
+  pblTime->tm_hour = (int)sunsetTime;
+  string_format_time(sunset_text, sizeof(sunset_text), time_format, pblTime);
+
+  //Sunset shows at top if before 6 am and 6 pm bottom otherwise
+  if (pblTime->tm_hour > 6 && pblTime->tm_hour < 18) {
+    text_layer_set_text(&text_top_sunset_layer, sunset_text);
+    text_layer_set_text_alignment(&text_top_sunset_layer, GTextAlignmentRight);
+    text_layer_set_text(&text_bottom_sunset_layer, "");
+  }
+  else {
+    text_layer_set_text(&text_top_sunset_layer, "");
+    text_layer_set_text(&text_bottom_sunset_layer, sunset_text);
+    text_layer_set_text_alignment(&text_bottom_sunset_layer, GTextAlignmentRight);
+  }
+  
+  sunriseTime+=12.0f;
+  sun_path_info.points[1].x = (int16_t)(my_sin(sunriseTime/24 * M_PI * 2) * 120);
+  sun_path_info.points[1].y = -(int16_t)(my_cos(sunriseTime/24 * M_PI * 2) * 120);
+
+  sunsetTime+=12.0f;
+  sun_path_info.points[4].x = (int16_t)(my_sin(sunsetTime/24 * M_PI * 2) * 120);
+  sun_path_info.points[4].y = -(int16_t)(my_cos(sunsetTime/24 * M_PI * 2) * 120);
+
 }
 
 //Called if Httpebble is installed on phone.
@@ -253,10 +237,13 @@ void have_time(int32_t dst_offset, bool is_dst, uint32_t unixtime, const char* t
 //Called if Httpebble is installed on phone.
 void have_location(float latitude, float longitude, float altitude, float accuracy, void* context) {
 	realLatitude = latitude;
-	realLongitude = longitude;  
+	realLongitude = longitude;
+  
+  PblTm time;
+  get_time(&time);   
   
   //Update screen to reflect correct Location information
-  updateDayAndNightInfo(true);
+  updateDayAndNightInfo(&time);
 }
 
 void handle_minute_tick(AppContextRef ctx, PebbleTickEvent *t) 
@@ -290,16 +277,16 @@ void handle_minute_tick(AppContextRef ctx, PebbleTickEvent *t)
   minute_hand.layer.layer.frame.origin.x = (144/2) - (minute_hand.layer.layer.frame.size.w/2);
   minute_hand.layer.layer.frame.origin.y = (168/2) - (minute_hand.layer.layer.frame.size.h/2);
 
-// Vibrate Every Hour
-  #if HOUR_VIBRATION
-	 
-    if ((t->tick_time->tm_min==0) && (t->tick_time->tm_sec==0))
-	{
-	vibes_enqueue_custom_pattern(hour_pattern);
-    }
-  #endif
-  
-  updateDayAndNightInfo(false);
+  if (t->units_changed & HOUR_UNIT)	{
+    if (t->units_changed & DAY_UNIT)	{
+        http_time_request();
+     }
+    updateDayAndNightInfo(t->tick_time);
+    // Vibrate Every Hour
+#if HOUR_VIBRATION
+    vibes_enqueue_custom_pattern(hour_pattern);
+#endif
+  }
 }
 
 
@@ -407,7 +394,7 @@ PblTm t;
 
   http_time_request();
 
-  updateDayAndNightInfo(false);
+  updateDayAndNightInfo(&t);
 }
 
 void handle_deinit(AppContextRef ctx) {
