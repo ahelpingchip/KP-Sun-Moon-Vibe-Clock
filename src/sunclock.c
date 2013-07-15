@@ -11,13 +11,13 @@
 #if ANDROID
 PBL_APP_INFO(MY_UUID,
              "KP Sun-Moon-Clock", "KarbonPebbler,Boldo,Chad Harp",
-             2, 0, /* App version */
+             2, 5, /* App version */
              RESOURCE_ID_IMAGE_MENU_ICON,
              APP_INFO_WATCH_FACE);
 # else
 PBL_APP_INFO(HTTP_UUID,
              "KP Sun-Moon-Clock", "KarbonPebbler,Boldo,Chad Harp",
-             2, 0, /* App version */
+             2, 5, /* App version */
              RESOURCE_ID_IMAGE_MENU_ICON,
              APP_INFO_WATCH_FACE);
 #endif
@@ -169,6 +169,10 @@ void updateDayAndNightInfo(PblTm *pblTime) {
     sunsetTime+=1;
   } 
   
+  if(sunsetTime > 21) {
+      text_layer_set_text_color(&moonLayer, GColorBlack);
+  }
+  
   pblTime->tm_min = (int)(60*(sunriseTime-((int)(sunriseTime))));
   pblTime->tm_hour = (int)sunriseTime;
   string_format_time(sunrise_text, sizeof(sunrise_text), time_format, pblTime);
@@ -264,6 +268,7 @@ void handle_minute_tick(AppContextRef ctx, PebbleTickEvent *t)
     if (t->units_changed & DAY_UNIT)	{
         http_time_request();
         updateDayAndNightInfo(t->tick_time);
+        handle_day(ctx, t);
      }
     // Vibrate Every Hour
 #if HOUR_VIBRATION
@@ -275,7 +280,7 @@ void handle_minute_tick(AppContextRef ctx, PebbleTickEvent *t)
 
 void handle_init(AppContextRef ctx) {
   (void)ctx;
-	
+
   window_init(&window, "KP Sun-Moon-Clock");
   window_stack_push(&window, true /* Animated */);
   window_set_background_color(&window, GColorWhite);
@@ -297,8 +302,7 @@ void handle_init(AppContextRef ctx) {
   text_layer_set_background_color(&text_time_layer, GColorClear);
   layer_set_frame(&text_time_layer.layer, GRect(0, 35, 144, 30));
   font_roboto = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_CONDENSED_30));
-  text_layer_set_font(&date_layer, font_roboto);
-
+  text_layer_set_font(&text_time_layer, font_roboto);
   layer_add_child(&window.layer, &text_time_layer.layer);
 
   rotbmp_pair_init_container(RESOURCE_ID_IMAGE_HOUR_WHITE, RESOURCE_ID_IMAGE_HOUR_BLACK, &bitmap_container);
@@ -312,9 +316,9 @@ void handle_init(AppContextRef ctx) {
   text_layer_set_text_alignment(&moonLayer, GTextAlignmentCenter);
 
   handle_day(ctx, NULL);
-	
+
   layer_add_child(&window.layer, &moonLayer.layer);
-	
+
 PblTm t;
   get_time(&t);
   rotbmp_pair_layer_set_angle(&bitmap_container.layer, TRIG_MAX_ANGLE * get24HourAngle(t.tm_hour, t.tm_min));
@@ -338,7 +342,7 @@ PblTm t;
   text_layer_set_text_alignment(&dom_layer, GTextAlignmentLeft);
   text_layer_set_text(&dom_layer, "00");
   layer_add_child(&window.layer, &dom_layer.layer);
-	
+
   //Month Text
   text_layer_init(&mon_layer, GRect(0, 0, 144, 127+26));
   text_layer_set_text_color(&mon_layer, GColorWhite);
@@ -384,7 +388,6 @@ PblTm t;
 
   updateDayAndNightInfo(&t);
 }
-
 void handle_deinit(AppContextRef ctx) {
   (void)ctx;
 
